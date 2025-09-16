@@ -46,7 +46,7 @@
 			WEEKDAYS.forEach((dayName,i)=>{
 				const d = new Date(monday); d.setDate(monday.getDate()+i);
 				const dstr = fmtMMDD(d);
-				const overridden = overrides[dstr] && overrides[dstr][dayName];
+				const overridden = overrides[dstr];
 				const effective = (overridden!==undefined && overridden!=="") ? overridden : (defaults[dayName]||"");
 				const row = document.createElement("div"); row.className = "row";
 				const dayEl = document.createElement("div"); dayEl.className = "day"; dayEl.textContent = `${dayName} (${dstr})`;

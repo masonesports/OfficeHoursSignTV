@@ -71,13 +71,18 @@ _model: Dict[str, Dict[str, str]] = load_schedule_model()
 
 # ---------- Public helper functions ----------
 
-def set_default_time(day: str, time_value: str) -> Dict[str, Dict[str, str]]:
+def set_default_time(day: str, start_time: str = "", end_time: str = "") -> Dict[str, Dict[str, str]]:
+	"""Set default time for a weekday using 24-hour format.
+	
+	day: Weekday name (Monday..Friday)
+	start_time: 'XX:XX' in 24-hour format (e.g., '14:00') or empty for CLOSED
+	end_time: 'XX:XX' in 24-hour format (e.g., '17:00') or empty for CLOSED
+	"""
 	day_norm = day.strip().capitalize()
 	if day_norm not in WEEKDAYS:
 		raise ValueError(f"Invalid day: {day}. Expected one of {', '.join(WEEKDAYS)}")
-	if not isinstance(time_value, str):
-		raise TypeError("time_value must be a string")
-	_model["default"][day_norm] = time_value
+	formatted_time = _format_time_range(start_time, end_time)
+	_model["default"][day_norm] = formatted_time
 	save_schedule_model(_model)
 	return _model
 
@@ -90,17 +95,50 @@ def set_default_bulk(new_times: Dict[str, str]) -> Dict[str, Dict[str, str]]:
 	return _model
 
 
-def temp_change(date_mmdd: str, day: str, time_value: str) -> Dict[str, Dict[str, str]]:
-	"""Set a temporary override for a specific date and weekday.
+def _format_time_range(start_time: str, end_time: str) -> str:
+	"""Convert 24-hour times to readable format.
+	
+	start_time: 'XX:XX' in 24-hour format (e.g., '14:00')
+	end_time: 'XX:XX' in 24-hour format (e.g., '17:00')
+	Returns: '2:00 PM - 5:00 PM' or 'CLOSED' if both are empty
+	"""
+	if not start_time or not end_time or start_time.strip() == "" or end_time.strip() == "":
+		return "CLOSED"
+	
+	try:
+		# Parse 24-hour format
+		start_hour, start_min = map(int, start_time.split(':'))
+		end_hour, end_min = map(int, end_time.split(':'))
+		
+		# Convert to 12-hour format
+		def to_12hour(hour, minute):
+			if hour == 0:
+				return f"12:{minute:02d} AM"
+			elif hour < 12:
+				return f"{hour}:{minute:02d} AM"
+			elif hour == 12:
+				return f"12:{minute:02d} PM"
+			else:
+				return f"{hour-12}:{minute:02d} PM"
+		
+		start_12 = to_12hour(start_hour, start_min)
+		end_12 = to_12hour(end_hour, end_min)
+		
+		return f"{start_12} - {end_12}"
+	except (ValueError, IndexError):
+		return "CLOSED"
+
+
+def temp_change(date_mmdd: str, start_time: str = "", end_time: str = "") -> Dict[str, Dict[str, str]]:
+	"""Set a temporary override for a specific date.
 
 	date_mmdd: 'MM/DD' (e.g., '09/16')
-	day: Weekday name (Monday..Friday)
+	start_time: 'XX:XX' in 24-hour format (e.g., '14:00') or empty for CLOSED
+	end_time: 'XX:XX' in 24-hour format (e.g., '17:00') or empty for CLOSED
 	"""
-	day_norm = day.strip().capitalize()
-	if day_norm not in WEEKDAYS:
-		raise ValueError(f"Invalid day: {day}. Expected one of {', '.join(WEEKDAYS)}")
 	_d = _normalize_mmdd(date_mmdd)
-	_model["overrides"].setdefault(_d, {})[day_norm] = str(time_value)
+	formatted_time = _format_time_range(start_time, end_time)
+	_model["overrides"][_d] = formatted_time
 	save_schedule_model(_model)
 	return _model
 
@@ -157,7 +195,7 @@ def effective_week_schedule(week_monday: date) -> List[Tuple[str, str, str]]:
 	for i, day_name in enumerate(WEEKDAYS):
 		d = week_monday + timedelta(days=i)
 		dstr = d.strftime("%m/%d")
-		override = _model["overrides"].get(dstr, {}).get(day_name)
+		override = _model["overrides"].get(dstr)
 		effective = override if (override is not None and override != "") else _model["default"].get(day_name, "")
 		result.append((day_name, dstr, effective or ""))
 	return result
@@ -170,6 +208,14 @@ app = Flask(__name__)
 def index():
 	# Compute current week's effective schedule
 	week_monday = start_of_week_monday(date.today())
+	rows = effective_week_schedule(week_monday)
+	return render_template("index.html", rows=rows)
+
+
+@app.get("/next-week")
+def next_week():
+	# Simulate next week's schedule
+	week_monday = start_of_week_monday(date.today()) + timedelta(days=7)
 	rows = effective_week_schedule(week_monday)
 	return render_template("index.html", rows=rows)
 
@@ -215,5 +261,14 @@ def api_set_override_week():
 
 
 if __name__ == "__main__":
+	# Test the temp_change function for today (09/16) with 24-hour format
+	temp_change("09/16", "14:00", "17:00")  # 2:00 PM - 5:00 PM
+	print("Test: Set 09/16 to 14:00-17:00 (2:00 PM - 5:00 PM)")
+	
+	# Set override for next week (09/23 - Monday next week)
+	temp_change("09/23", "10:00", "12:00")  # 10:00 AM - 12:00 PM
+	print("Test: Set 09/23 (next Monday) to 10:00-12:00 (10:00 AM - 12:00 PM)")
+	
 	# Run development server
 	app.run(host="0.0.0.0", port=5000, debug=True)
+	
