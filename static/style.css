@@ -5,8 +5,8 @@ body {
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 	background: #0b8f0b;
 	color: #e8ecf1;
-	/* Use viewport-based scaling for base size (fixed invalid clamp) */
-	font-size: clamp(24px, 6vh, 60px);
+	/* Pure viewport scaling - no min/max bounds */
+	font-size: 6vh;
 }
 .container {
 	max-width: 100vw;
@@ -15,8 +15,8 @@ body {
 	/* viewport-relative padding */
 	padding: 6vh 4vw;
 }
-/* Title (already responsive via vh) */
-h1 { font-size: clamp(42px, 3.5vh, 63px); margin: 1vh 0 2vh; }
+/* Title - pure viewport scaling */
+h1 { font-size: 3.5vh; margin: 1vh 0 2vh; }
 .schedule { border-top: 1px solid rgba(0,0,0,0.2); }
 .row {
 	display: grid;
@@ -24,8 +24,8 @@ h1 { font-size: clamp(42px, 3.5vh, 63px); margin: 1vh 0 2vh; }
 	/* gaps relative to viewport */
 	column-gap: 3vw;
 	row-gap: 1.2vh;
-	/* Row text responsive via vh */
-	font-size: clamp(80px, 9vh, 180px);
+	/* Row text - pure viewport scaling */
+	font-size: 9vh;
 	/* Row padding relative to viewport */
 	padding: 3vh 1.2vw;
 	/* Min height relative to viewport */
@@ -36,7 +36,7 @@ h1 { font-size: clamp(42px, 3.5vh, 63px); margin: 1vh 0 2vh; }
 }
 .day { font-weight: 800; color: #d5ffd5; word-break: break-word; line-height: 1.35; }
 .time { color: #ffffff; opacity: 0.98; word-break: break-word; line-height: 1.35; }
-.hint { color: #e2ffe2; font-size: clamp(16px, 2vh, 24px); margin-top: 1vh; opacity: 0.9; }
+.hint { color: #e2ffe2; font-size: 2vh; margin-top: 1vh; opacity: 0.9; }
 
 /* Portrait 1080x1920+ */
 @media (orientation: portrait) and (min-height: 1200px) {
