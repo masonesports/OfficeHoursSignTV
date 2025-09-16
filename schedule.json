@@ -1,10 +1,10 @@
 {
   "default": {
-    "Monday": "",
-    "Tuesday": "",
-    "Wednesday": "",
-    "Thursday": "",
-    "Friday": ""
+    "Monday": "12PM - 5PM",
+    "Tuesday": "12PM - 5PM",
+    "Wednesday": "CLOSED",
+    "Thursday": "CLOSED",
+    "Friday": "CLOSED"
   },
   "overrides": {}
 }
