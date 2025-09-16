@@ -15,7 +15,7 @@ body {
 	padding: 80px 64px;
 }
 /* Title */
-h1 { font-size: clamp(60px, 8vh, 90px); margin: 8px 0 24px; }
+h1 { font-size: clamp(60px, 5vh, 90px); margin: 8px 0 24px; }
 .schedule { border-top: 1px solid rgba(0,0,0,0.2); }
 .row {
 	display: grid;
