@@ -5,22 +5,34 @@ body {
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 	background: #0b8f0b;
 	color: #e8ecf1;
+	/* Responsive base font size: scales with viewport height but stays readable */
+	font-size: clamp(14px, 2.1vh, 22px);
 }
 .container {
-	max-width: 720px;
+	max-width: 900px;
 	margin: 48px auto;
 	padding: 0 16px;
 }
-h1 { font-size: 28px; margin: 0 0 24px; }
+/* Title scales with height */
+h1 { font-size: clamp(22px, 3.2vh, 42px); margin: 0 0 24px; }
 .schedule { border-top: 1px solid rgba(0,0,0,0.2); }
 .row {
 	display: grid;
-	grid-template-columns: 160px 1fr;
+	/* Wider label column to fit day + date on portrait displays */
+	grid-template-columns: 220px 1fr;
 	gap: 16px;
+	/* Row text scales slightly larger than base for readability */
+	font-size: clamp(16px, 2.6vh, 28px);
 	padding: 12px 0;
 	border-bottom: 1px solid rgba(0,0,0,0.2);
 	background: rgba(0,0,0,0.08);
 }
-.day { font-weight: 600; color: #d5ffd5; }
-.time { color: #ffffff; opacity: 0.95; }
-.hint { color: #e2ffe2; font-size: 12px; margin-top: 16px; opacity: 0.9; }
+.day { font-weight: 600; color: #d5ffd5; word-break: break-word; }
+.time { color: #ffffff; opacity: 0.95; word-break: break-word; }
+.hint { color: #e2ffe2; font-size: clamp(11px, 1.6vh, 14px); margin-top: 16px; opacity: 0.9; }
+
+/* Optimize for tall portrait 1080x1920 displays */
+@media (orientation: portrait) and (min-height: 1200px) {
+	.container { max-width: 1000px; }
+	.row { grid-template-columns: 260px 1fr; }
+}
