@@ -62,6 +62,29 @@ from app import set_time
 set_time("Monday", "2–4 PM")
 ```
 
+## GitHub Pages (static hosting)
+
+This repo also includes a static site for GitHub Pages:
+
+- Root `index.html` loads `schedule.json` and renders the Monday–Friday table using JavaScript.
+- Styling is shared via `static/style.css`.
+
+To update the public schedule on GitHub Pages:
+
+- Edit `schedule.json` directly in the repo and commit to the Pages branch (usually `main` or `gh-pages`).
+- GitHub Pages will serve the updated JSON; the page fetches it on load.
+
+Local preview of the static site:
+
+```bash
+python3 -m http.server 8080
+# Then open http://127.0.0.1:8080/
+```
+
+Notes:
+- If you use both Flask and static Pages, treat `schedule.json` as the source of truth. The Flask app writes to the same `schedule.json`, so you can update locally via the API, commit the new JSON, and push to Pages.
+- GitHub Pages may cache assets; hard refresh if updates don’t appear immediately.
+
 ## Notes
 
 - Supported days: Monday–Friday.

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Office Hours Schedule</title>
+	<link rel="stylesheet" href="static/style.css">
+	<style>
+		/* Minimal fallback if CSS not found */
+		.no-style body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+	</style>
+</head>
+<body>
+	<div class="container">
+		<h1>Office Hours Schedule</h1>
+		<div id="schedule" class="schedule"></div>
+		<p class="hint">This page reads times from <code>schedule.json</code>.</p>
+	</div>
+	<script>
+		const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+		async function loadSchedule() {
+			try {
+				const res = await fetch("schedule.json", { cache: "no-store" });
+				if (!res.ok) throw new Error("Failed to load schedule.json");
+				const data = await res.json();
+				render(data || {});
+			} catch (err) {
+				console.error(err);
+				render({});
+			}
+		}
+		function render(schedule) {
+			const container = document.getElementById("schedule");
+			container.innerHTML = "";
+			WEEKDAYS.forEach(day => {
+				const row = document.createElement("div");
+				row.className = "row";
+				const dayEl = document.createElement("div");
+				dayEl.className = "day";
+				dayEl.textContent = day;
+				const timeEl = document.createElement("div");
+				timeEl.className = "time";
+				timeEl.textContent = schedule[day] && String(schedule[day]).trim() ? schedule[day] : "—";
+				row.appendChild(dayEl);
+				row.appendChild(timeEl);
+				container.appendChild(row);
+			});
+		}
+		loadSchedule();
+	</script>
+</body>
+</html>
