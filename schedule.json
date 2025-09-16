@@ -1,9 +1,12 @@
 {
-  "Monday": "",
-  "Tuesday": "",
-  "Wednesday": "",
-  "Thursday": "",
-  "Friday": ""
+  "default": {
+    "Monday": "",
+    "Tuesday": "",
+    "Wednesday": "",
+    "Thursday": "",
+    "Friday": ""
+  },
+  "overrides": {}
 }
 
 

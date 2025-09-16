@@ -1,6 +1,6 @@
 # OfficeHoursSignTV
 
-A simple Flask app to display and manage an office hours schedule (Monday–Friday).
+A simple Flask app and static site to display and manage an office hours schedule (Monday–Friday). Supports default times and date-specific overrides.
 
 ## Setup
 
@@ -17,62 +17,106 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Run the app
+## Run the app (dynamic)
 
 ```bash
 python app.py
 ```
 
-- The site will be available at `http://127.0.0.1:5000/`.
-- The schedule persists to `schedule.json` in the project root.
+- Open `http://127.0.0.1:5000/`.
+- The page shows the current week (Mon–Fri) with each day's date and effective time.
+- Data persists to `schedule.json`.
 
-## Update the schedule
+## Data model (schedule.json)
 
-Two ways to update times:
-
-1) Single day via JSON body fields `day` and `time`:
-
-```bash
-curl -X POST http://127.0.0.1:5000/api/schedule \
-  -H 'Content-Type: application/json' \
-  -d '{"day": "Monday", "time": "2–4 PM"}'
+```json
+{
+  "default": {
+    "Monday": "",
+    "Tuesday": "",
+    "Wednesday": "",
+    "Thursday": "",
+    "Friday": ""
+  },
+  "overrides": {
+    "MM/DD": {
+      "Monday": "2–4 PM",
+      "Wednesday": "10–12 PM"
+    }
+  }
+}
 ```
 
-2) Bulk update with a JSON object of `day: time` pairs (partial or full):
+- **default**: baseline weekly schedule.
+- **overrides**: date-specific changes keyed by `MM/DD`. Only include days that differ from default.
+
+## API endpoints
+
+- **Set default times** (single or bulk):
 
 ```bash
-curl -X POST http://127.0.0.1:5000/api/schedule \
+# Single
+curl -X POST http://127.0.0.1:5000/api/schedule/default \
+  -H 'Content-Type: application/json' \
+  -d '{"day":"Monday","time":"2–4 PM"}'
+
+# Bulk
+curl -X POST http://127.0.0.1:5000/api/schedule/default \
+  -H 'Content-Type: application/json' \
+  -d '{"Monday":"2–4 PM","Wednesday":"10–12 PM"}'
+```
+
+- **Temporary override for a specific date**:
+
+```bash
+# Single day override for a date
+curl -X POST http://127.0.0.1:5000/api/schedule/override \
+  -H 'Content-Type: application/json' \
+  -d '{"date":"09/16","day":"Monday","time":"3–5 PM"}'
+
+# Multiple days override for one date
+curl -X POST http://127.0.0.1:5000/api/schedule/override \
+  -H 'Content-Type: application/json' \
+  -d '{"date":"09/18","updates":{"Wednesday":"CLOSED","Thursday":"1–2 PM"}}'
+```
+
+- **Weekly batch overrides** (week starting Monday):
+
+```bash
+curl -X POST http://127.0.0.1:5000/api/schedule/override/week \
   -H 'Content-Type: application/json' \
   -d '{
-    "Monday": "2–4 PM",
-    "Tuesday": "",
-    "Wednesday": "10–12 PM",
-    "Thursday": "",
-    "Friday": "1–3 PM"
+    "monday":"09/15",
+    "times": {"Monday":"2–4 PM","Tuesday":"","Wednesday":"10–12 PM"}
   }'
+```
+
+- **Get full model**:
+
+```bash
+curl http://127.0.0.1:5000/api/schedule
 ```
 
 ## Using in Python code
 
-You can import and call the function that sets the time:
-
 ```python
-from app import set_time
+from app import set_default_time, set_default_bulk, temp_change, temp_change_for_date, temp_change_week
 
-set_time("Monday", "2–4 PM")
+set_default_time("Monday", "2–4 PM")
+set_default_bulk({"Wednesday": "10–12 PM", "Friday": "1–3 PM"})
+temp_change("09/16", "Monday", "CLOSED")
+temp_change_for_date("09/18", {"Wednesday": "", "Thursday": "2–4 PM"})
+temp_change_week("09/15", {"Monday": "2–4 PM", "Wednesday": "10–12 PM"})
 ```
 
 ## GitHub Pages (static hosting)
 
-This repo also includes a static site for GitHub Pages:
-
-- Root `index.html` loads `schedule.json` and renders the Monday–Friday table using JavaScript.
-- Styling is shared via `static/style.css`.
+- Root `index.html` reads `schedule.json` and computes the current week’s effective times in the browser.
+- Styling in `static/style.css` (background is green).
 
 To update the public schedule on GitHub Pages:
-
-- Edit `schedule.json` directly in the repo and commit to the Pages branch (usually `main` or `gh-pages`).
-- GitHub Pages will serve the updated JSON; the page fetches it on load.
+- Edit `schedule.json` and commit to the Pages branch.
+- For temporary changes, add an entry under `overrides` with the `MM/DD` date.
 
 Local preview of the static site:
 

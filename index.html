@@ -14,36 +14,35 @@
 	<div class="container">
 		<h1>Office Hours Schedule</h1>
 		<div id="schedule" class="schedule"></div>
-		<p class="hint">This page reads times from <code>schedule.json</code>.</p>
+		<p class="hint">This page uses <code>schedule.json</code> (default + date overrides). Shows current week.</p>
 	</div>
 	<script>
 		const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-		async function loadSchedule() {
-			try {
+		function startOfWeekMonday(d){ const c=new Date(d); const day=c.getDay(); const diff=(day+6)%7; c.setDate(c.getDate()-diff); c.setHours(0,0,0,0); return c; }
+		function fmtMMDD(d){ const m=String(d.getMonth()+1).padStart(2,'0'); const day=String(d.getDate()).padStart(2,'0'); return `${m}/${day}`; }
+		async function loadSchedule(){
+			try{
 				const res = await fetch("schedule.json", { cache: "no-store" });
-				if (!res.ok) throw new Error("Failed to load schedule.json");
+				if(!res.ok) throw new Error("Failed to load schedule.json");
 				const data = await res.json();
-				render(data || {});
-			} catch (err) {
-				console.error(err);
-				render({});
-			}
+				renderEffective(data||{});
+			}catch(err){ console.error(err); renderEffective({}); }
 		}
-		function render(schedule) {
+		function renderEffective(model){
+			const defaults = (model && model.default) || Object.fromEntries(WEEKDAYS.map(d=>[d,""]));
+			const overrides = (model && model.overrides) || {};
 			const container = document.getElementById("schedule");
 			container.innerHTML = "";
-			WEEKDAYS.forEach(day => {
-				const row = document.createElement("div");
-				row.className = "row";
-				const dayEl = document.createElement("div");
-				dayEl.className = "day";
-				dayEl.textContent = day;
-				const timeEl = document.createElement("div");
-				timeEl.className = "time";
-				timeEl.textContent = schedule[day] && String(schedule[day]).trim() ? schedule[day] : "—";
-				row.appendChild(dayEl);
-				row.appendChild(timeEl);
-				container.appendChild(row);
+			const monday = startOfWeekMonday(new Date());
+			WEEKDAYS.forEach((dayName,i)=>{
+				const d = new Date(monday); d.setDate(monday.getDate()+i);
+				const dstr = fmtMMDD(d);
+				const overridden = overrides[dstr] && overrides[dstr][dayName];
+				const effective = (overridden!==undefined && overridden!=="") ? overridden : (defaults[dayName]||"");
+				const row = document.createElement("div"); row.className = "row";
+				const dayEl = document.createElement("div"); dayEl.className = "day"; dayEl.textContent = `${dayName} (${dstr})`;
+				const timeEl = document.createElement("div"); timeEl.className = "time"; timeEl.textContent = effective || "—";
+				row.appendChild(dayEl); row.appendChild(timeEl); container.appendChild(row);
 			});
 		}
 		loadSchedule();

@@ -10,14 +10,14 @@
 	<div class="container">
 		<h1>Office Hours Schedule</h1>
 		<div class="schedule">
-			{% for day in weekdays %}
+			{% for day, dstr, time in rows %}
 				<div class="row">
-					<div class="day">{{ day }}</div>
-					<div class="time">{{ schedule.get(day, '') or '—' }}</div>
+					<div class="day">{{ day }} ({{ dstr }})</div>
+					<div class="time">{{ time or '—' }}</div>
 				</div>
 			{% endfor %}
 		</div>
-		<p class="hint">Update via API: POST /api/schedule with JSON</p>
+		<p class="hint">Update defaults: POST /api/schedule/default. Overrides: POST /api/schedule/override</p>
 	</div>
 </body>
 </html>
