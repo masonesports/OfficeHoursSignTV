@@ -21,7 +21,7 @@ h1 { font-size: clamp(42px, 3.5vh, 63px); margin: 8px 0 24px; }
 	display: grid;
 	grid-template-columns: 38% 62%;
 	column-gap: 40px;
-	row-gap: 24px;
+	row-gap: 12px;
 	/* Row text 25% bigger */
 	font-size: clamp(80px, 9vh, 180px);
 	/* Row vertical padding 40% smaller (from 112px -> ~68px) */
