@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Office Hours Schedule</title>
+	<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+	<div class="container">
+		<h1>Office Hours Schedule</h1>
+		<div class="schedule">
+			{% for day in weekdays %}
+				<div class="row">
+					<div class="day">{{ day }}</div>
+					<div class="time">{{ schedule.get(day, '') or '—' }}</div>
+				</div>
+			{% endfor %}
+		</div>
+		<p class="hint">Update via API: POST /api/schedule with JSON</p>
+	</div>
+</body>
+</html>
