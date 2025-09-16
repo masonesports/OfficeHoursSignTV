@@ -6,7 +6,7 @@ body {
 	background: #0b8f0b;
 	color: #e8ecf1;
 	/* Responsive base font size: scales with viewport height but stays readable */
-	font-size: clamp(14px, 2.1vh, 22px);
+	font-size: clamp(20px, 2.1vh, 40px);
 }
 .container {
 	/* Take full viewport width to widen the table */
