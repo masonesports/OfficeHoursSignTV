@@ -19,20 +19,21 @@ h1 { font-size: clamp(22px, 3.2vh, 42px); margin: 0 0 24px; }
 .row {
 	display: grid;
 	/* Wider label column to fit day + date on portrait displays */
-	grid-template-columns: 220px 1fr;
-	gap: 16px;
+	grid-template-columns: 260px 1fr;
+	gap: 24px;
 	/* Row text scales slightly larger than base for readability */
 	font-size: clamp(16px, 2.6vh, 28px);
-	padding: 12px 0;
+	padding: 20px 0; /* more vertical space */
 	border-bottom: 1px solid rgba(0,0,0,0.2);
 	background: rgba(0,0,0,0.08);
+	align-items: center; /* vertical alignment */
 }
-.day { font-weight: 600; color: #d5ffd5; word-break: break-word; }
-.time { color: #ffffff; opacity: 0.95; word-break: break-word; }
+.day { font-weight: 600; color: #d5ffd5; word-break: break-word; line-height: 1.25; }
+.time { color: #ffffff; opacity: 0.95; word-break: break-word; line-height: 1.25; }
 .hint { color: #e2ffe2; font-size: clamp(11px, 1.6vh, 14px); margin-top: 16px; opacity: 0.9; }
 
 /* Optimize for tall portrait 1080x1920 displays */
 @media (orientation: portrait) and (min-height: 1200px) {
 	.container { max-width: 1000px; }
-	.row { grid-template-columns: 260px 1fr; }
+	.row { grid-template-columns: 300px 1fr; padding: 24px 0; }
 }
