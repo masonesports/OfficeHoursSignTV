@@ -5,7 +5,7 @@ body {
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 	background: #0b8f0b;
 	color: #e8ecf1;
-	/* Roughly doubled base size */
+	/* base size left as-is per your changes */
 	font-size: clamp(20, 6vh, 60);
 }
 .container {
@@ -14,17 +14,18 @@ body {
 	margin: 0 auto;
 	padding: 80px 64px;
 }
-/* Title */
-h1 { font-size: clamp(60px, 5vh, 90px); margin: 8px 0 24px; }
+/* Title (30% smaller) */
+h1 { font-size: clamp(42px, 3.5vh, 63px); margin: 8px 0 24px; }
 .schedule { border-top: 1px solid rgba(0,0,0,0.2); }
 .row {
 	display: grid;
 	grid-template-columns: 38% 62%;
 	column-gap: 40px;
 	row-gap: 24px;
-	/* Doubled row text size */
-	font-size: clamp(64px, 7.2vh, 144px);
-	padding: 112px 24px; /* taller rows */
+	/* Row text 25% bigger */
+	font-size: clamp(80px, 9vh, 180px);
+	/* Row vertical padding 40% smaller (from 112px -> ~68px) */
+	padding: 68px 24px;
 	min-height: 380px;
 	border-bottom: 1px solid rgba(0,0,0,0.2);
 	background: rgba(0,0,0,0.08);
@@ -34,8 +35,9 @@ h1 { font-size: clamp(60px, 5vh, 90px); margin: 8px 0 24px; }
 .time { color: #ffffff; opacity: 0.98; word-break: break-word; line-height: 1.35; }
 .hint { color: #e2ffe2; font-size: clamp(24px, 3vh, 36px); margin-top: 16px; opacity: 0.9; }
 
-/* Portrait 1080x1920+ — keep sizes same or larger so it never shrinks */
+/* Portrait 1080x1920+ */
 @media (orientation: portrait) and (min-height: 1200px) {
 	.container { max-width: 100vw; width: 100vw; padding: 96px 72px; }
-	.row { grid-template-columns: 38% 62%; padding: 128px 28px; column-gap: 48px; min-height: 420px; }
+	/* Media-query row padding 40% smaller too (from 128px -> ~77px) */
+	.row { grid-template-columns: 38% 62%; padding: 77px 28px; column-gap: 48px; min-height: 420px; }
 }
