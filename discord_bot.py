@@ -8,6 +8,7 @@ from typing import Optional
 import discord
 from discord.ext import commands
 from discord import app_commands
+from discord.ext.commands import has_permissions
 
 from app import (
     set_default_time, set_default_bulk, temp_change, 
@@ -44,6 +45,18 @@ async def on_ready():
         print(f'Synced {len(synced)} command(s)')
     except Exception as e:
         print(f'Failed to sync commands: {e}')
+
+# Helper function to check admin permissions
+def is_admin(interaction: discord.Interaction) -> bool:
+    """Check if the user has administrator permissions.
+    
+    Args:
+        interaction: Discord interaction object
+        
+    Returns:
+        bool: True if user has administrator permissions, False otherwise
+    """
+    return interaction.user.guild_permissions.administrator
 
 # Helper function to push changes to git
 async def push_to_git():
@@ -107,23 +120,16 @@ def format_schedule_for_discord(rows):
     return "\n".join(lines)
 
 # Slash Commands with autocomplete
-@bot.tree.command(name="hours", description="Show the office hours schedule")
-@app_commands.describe(week="Show current week or next week")
-@app_commands.choices(week=[
-    app_commands.Choice(name="Current Week", value="current"),
-    app_commands.Choice(name="Next Week", value="next")
-])
-async def show_schedule(interaction: discord.Interaction, week: str = "current"):
-    """Show the office hours schedule for the current or next week.
+@bot.tree.command(name="hours", description="Show this week's office hours schedule")
+async def show_schedule(interaction: discord.Interaction):
+    """Show this week's office hours schedule.
     
-    This slash command displays the GMU Esports office hours schedule.
-    Users can choose to view either the current week or next week's schedule.
-    The schedule shows effective hours considering both default schedules
-    and any date-specific overrides.
+    This slash command displays the GMU Esports office hours schedule
+    for the current week. The schedule shows effective hours considering
+    both default schedules and any date-specific overrides.
     
     Args:
         interaction: Discord interaction object containing command context
-        week: Which week to display ("current" or "next"), defaults to "current"
         
     Side Effects:
         - Sends formatted schedule message to Discord channel
@@ -131,19 +137,12 @@ async def show_schedule(interaction: discord.Interaction, week: str = "current")
         
     Example:
         /hours -> Shows current week's schedule
-        /hours week:Next Week -> Shows next week's schedule
     """
     try:
-        if week == "next":
-            # Show next week
-            week_monday = start_of_week_monday(date.today()) + timedelta(days=7)
-            rows = effective_week_schedule(week_monday)
-            title = "**Next Week's Schedule**"
-        else:
-            # Show current week
-            week_monday = start_of_week_monday(date.today())
-            rows = effective_week_schedule(week_monday)
-            title = "**Current Week's Schedule**"
+        # Show current week
+        week_monday = start_of_week_monday(date.today())
+        rows = effective_week_schedule(week_monday)
+        title = "**This Week's Schedule**"
         
         schedule_text = format_schedule_for_discord(rows)
         await interaction.response.send_message(f"{title}\n{schedule_text}")
@@ -188,6 +187,11 @@ async def set_default_command(interaction: discord.Interaction, day: str, start_
         /set_default day:Tuesday start_time: end_time:
         -> Closes Tuesday by default
     """
+    # Check admin permissions
+    if not is_admin(interaction):
+        await interaction.response.send_message("❌ This command requires administrator permissions.", ephemeral=True)
+        return
+    
     try:
         set_default_time(day, start_time, end_time)
         status = f"{start_time}-{end_time}" if start_time and end_time else "CLOSED"
@@ -198,7 +202,7 @@ async def set_default_command(interaction: discord.Interaction, day: str, start_
     except Exception as e:
         await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
-@bot.tree.command(name="set_override", description="Set temporary override for a specific date")
+@bot.tree.command(name="edit_date", description="Edit date")
 @app_commands.describe(
     date_mmdd="Date in MM/DD format (e.g., 09/16)",
     status="Is the office open or closed?",
@@ -231,12 +235,17 @@ async def set_override_command(interaction: discord.Interaction, date_mmdd: str,
         - Sends confirmation or error message to Discord
         
     Example:
-        /set_override date_mmdd:09/16 status:Open start_time:14:00 end_time:17:00
+        /edit_date date_mmdd:09/16 status:Open start_time:14:00 end_time:17:00
         -> Sets September 16th to 2:00 PM - 5:00 PM
         
-        /set_override date_mmdd:12/25 status:Closed reason:Holiday
+        /edit_date date_mmdd:12/25 status:Closed reason:Holiday
         -> Closes December 25th with reason "Holiday"
     """
+    # Check admin permissions
+    if not is_admin(interaction):
+        await interaction.response.send_message("❌ This command requires administrator permissions.", ephemeral=True)
+        return
+    
     try:
         if status == "open":
             if not start_time or not end_time:
@@ -258,170 +267,8 @@ async def set_override_command(interaction: discord.Interaction, date_mmdd: str,
     except Exception as e:
         await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
-@bot.tree.command(name="set_week", description="Set overrides for a whole week starting Monday")
-@app_commands.describe(
-    monday_date="Monday date in MM/DD format (e.g., 09/23)",
-    monday_status="Monday status",
-    monday_times="Monday times in StartTime-EndTime format (e.g., 14:00-17:00) - only if open",
-    monday_reason="Monday reason for closing - only if closed",
-    tuesday_status="Tuesday status",
-    tuesday_times="Tuesday times in StartTime-EndTime format - only if open",
-    tuesday_reason="Tuesday reason for closing - only if closed",
-    wednesday_status="Wednesday status",
-    wednesday_times="Wednesday times in StartTime-EndTime format - only if open",
-    wednesday_reason="Wednesday reason for closing - only if closed",
-    thursday_status="Thursday status",
-    thursday_times="Thursday times in StartTime-EndTime format - only if open",
-    thursday_reason="Thursday reason for closing - only if closed",
-    friday_status="Friday status",
-    friday_times="Friday times in StartTime-EndTime format - only if open",
-    friday_reason="Friday reason for closing - only if closed"
-)
-@app_commands.choices(monday_status=[
-    app_commands.Choice(name="Open", value="open"),
-    app_commands.Choice(name="Closed", value="closed")
-])
-@app_commands.choices(tuesday_status=[
-    app_commands.Choice(name="Open", value="open"),
-    app_commands.Choice(name="Closed", value="closed")
-])
-@app_commands.choices(wednesday_status=[
-    app_commands.Choice(name="Open", value="open"),
-    app_commands.Choice(name="Closed", value="closed")
-])
-@app_commands.choices(thursday_status=[
-    app_commands.Choice(name="Open", value="open"),
-    app_commands.Choice(name="Closed", value="closed")
-])
-@app_commands.choices(friday_status=[
-    app_commands.Choice(name="Open", value="open"),
-    app_commands.Choice(name="Closed", value="closed")
-])
-async def set_week_command(interaction: discord.Interaction, monday_date: str, 
-                          monday_status: str = "open", monday_times: str = "", monday_reason: str = "Closed",
-                          tuesday_status: str = "open", tuesday_times: str = "", tuesday_reason: str = "Closed",
-                          wednesday_status: str = "open", wednesday_times: str = "", wednesday_reason: str = "Closed",
-                          thursday_status: str = "open", thursday_times: str = "", thursday_reason: str = "Closed",
-                          friday_status: str = "open", friday_times: str = "", friday_reason: str = "Closed"):
-    """Set overrides for an entire week starting from a Monday.
-    
-    This slash command allows administrators to set office hours for an entire
-    week starting from a Monday. It creates date-specific overrides for each
-    day of the week (Monday through Friday) and is useful for special events,
-    holidays, or week-long schedule changes.
-    
-    Args:
-        interaction: Discord interaction object containing command context
-        monday_date: Monday date in MM/DD format (e.g., "09/23")
-        monday_status: Status for Monday ("open" or "closed")
-        monday_times: Times for Monday in "StartTime-EndTime" format (if open)
-        monday_reason: Reason for closing Monday (if closed)
-        tuesday_status: Status for Tuesday ("open" or "closed")
-        tuesday_times: Times for Tuesday in "StartTime-EndTime" format (if open)
-        tuesday_reason: Reason for closing Tuesday (if closed)
-        wednesday_status: Status for Wednesday ("open" or "closed")
-        wednesday_times: Times for Wednesday in "StartTime-EndTime" format (if open)
-        wednesday_reason: Reason for closing Wednesday (if closed)
-        thursday_status: Status for Thursday ("open" or "closed")
-        thursday_times: Times for Thursday in "StartTime-EndTime" format (if open)
-        thursday_reason: Reason for closing Thursday (if closed)
-        friday_status: Status for Friday ("open" or "closed")
-        friday_times: Times for Friday in "StartTime-EndTime" format (if open)
-        friday_reason: Reason for closing Friday (if closed)
-        
-    Side Effects:
-        - Updates the schedule model with week-long overrides
-        - Saves changes to schedule.json file
-        - Sends confirmation or error message to Discord
-        
-    Example:
-        /set_week monday_date:09/23 monday_status:Open monday_times:14:00-17:00 tuesday_status:Closed tuesday_reason:Holiday
-        -> Sets week of September 23rd with Monday open 2-5 PM and Tuesday closed for holiday
-    """
-    try:
-        week_times = {}
-        days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-        statuses = [monday_status, tuesday_status, wednesday_status, thursday_status, friday_status]
-        times = [monday_times, tuesday_times, wednesday_times, thursday_times, friday_times]
-        reasons = [monday_reason, tuesday_reason, wednesday_reason, thursday_reason, friday_reason]
-        
-        for day, status, time_str, reason in zip(days, statuses, times, reasons):
-            if status == "open" and time_str and time_str.strip():
-                if '-' in time_str:
-                    start_time, end_time = time_str.split('-', 1)
-                    week_times[day] = f"{start_time.strip()},{end_time.strip()}"
-                else:
-                    week_times[day] = f"{time_str.strip()},"
-            elif status == "closed":
-                week_times[day] = f"CLOSED ({reason})"
-        
-        temp_change_week(monday_date, week_times)
-        await interaction.response.send_message(f"✅ Set week overrides for {monday_date}")
-        
-        # Push changes to git
-        await push_to_git()
-    except Exception as e:
-        await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
-@bot.tree.command(name="show_data", description="Show the raw schedule data")
-async def show_data_command(interaction: discord.Interaction):
-    """Show the raw schedule data in JSON format.
-    
-    This slash command displays the complete schedule model as raw JSON data.
-    It's useful for debugging, data inspection, or administrative purposes.
-    The data is displayed in a code block for better readability.
-    
-    Args:
-        interaction: Discord interaction object containing command context
-        
-    Side Effects:
-        - Loads the current schedule model from disk
-        - Sends JSON data to Discord channel
-        - Handles Discord message length limits by splitting large data
-        
-    Example:
-        /show_data -> Displays complete schedule model as JSON
-    """
-    try:
-        model = load_schedule_model()
-        # Split into chunks if too long
-        data_str = str(model)
-        if len(data_str) > 1900:  # Discord limit
-            await interaction.response.send_message("Data too large, showing first part:", ephemeral=True)
-            await interaction.followup.send(f"```json\n{data_str[:1900]}...\n```", ephemeral=True)
-        else:
-            await interaction.response.send_message(f"```json\n{data_str}\n```", ephemeral=True)
-    except Exception as e:
-        await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
-@bot.tree.command(name="schedule", description="Show this week's office hours schedule")
-async def show_schedule_backup(interaction: discord.Interaction):
-    """Show this week's office hours schedule.
-    
-    This slash command displays the GMU Esports office hours schedule
-    for the current week. It shows the effective hours considering both
-    default schedules and any date-specific overrides.
-    
-    Args:
-        interaction: Discord interaction object containing command context
-        
-    Side Effects:
-        - Sends formatted schedule message to Discord channel
-        - Sends error message if something goes wrong
-        
-    Example:
-        /schedule -> Shows current week's schedule
-    """
-    try:
-        # Show current week
-        week_monday = start_of_week_monday(date.today())
-        rows = effective_week_schedule(week_monday)
-        title = "**This Week's Schedule**"
-        
-        schedule_text = format_schedule_for_discord(rows)
-        await interaction.response.send_message(f"{title}\n{schedule_text}")
-    except Exception as e:
-        await interaction.response.send_message(f"Error: {str(e)}", ephemeral=True)
 
 @bot.tree.command(name="test", description="Test if the bot is working")
 async def test_command(interaction: discord.Interaction):
@@ -440,7 +287,126 @@ async def test_command(interaction: discord.Interaction):
     Example:
         /test -> "🤖 Bot is working! Use `/hours` or `/schedule` to see commands."
     """
-    await interaction.response.send_message("🤖 Bot is working! Use `/hours` or `/schedule` to see commands.")
+    await interaction.response.send_message("🤖 Bot is working! Use `/hours` to see the schedule.")
+
+@bot.tree.command(name="close_today", description="Close today with a reason")
+@app_commands.describe(
+    reason="Reason for closing (e.g., Holiday, Maintenance, etc.)"
+)
+async def close_today_command(interaction: discord.Interaction, reason: str = "Closed"):
+    """Close today with a reason.
+    
+    This slash command provides a quick way to close the office for today
+    with a custom reason. It creates a date-specific override for today's
+    date that shows "CLOSED" with the provided reason.
+    
+    Args:
+        interaction: Discord interaction object containing command context
+        reason: Reason for closing (e.g., "Holiday", "Maintenance", "Event")
+        
+    Side Effects:
+        - Updates the schedule model with today's date override
+        - Saves changes to schedule.json file
+        - Sends confirmation or error message to Discord
+        - Pushes changes to git
+        
+    Example:
+        /close_today reason:Holiday
+        -> Closes today with reason "Holiday"
+        
+        /close_today reason:Maintenance
+        -> Closes today with reason "Maintenance"
+    """
+    # Check admin permissions
+    if not is_admin(interaction):
+        await interaction.response.send_message("❌ This command requires administrator permissions.", ephemeral=True)
+        return
+    
+    try:
+        # Get today's date in MM/DD format
+        today = date.today()
+        today_str = today.strftime("%m/%d")
+        
+        temp_change(today_str, "", "")  # This sets it to CLOSED
+        # Update the override to include the reason
+        from app import _model, save_schedule_model
+        _d = today_str
+        _model["overrides"][_d] = f"CLOSED ({reason})"
+        save_schedule_model(_model)
+        await interaction.response.send_message(f"✅ Closed today ({today_str}): {reason}")
+        
+        # Push changes to git
+        await push_to_git()
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
+
+@bot.tree.command(name="edit_today", description="Edit today's hours")
+@app_commands.describe(
+    status="Is the office open or closed?",
+    start_time="Start time in 24-hour format (e.g., 14:00) - only if open",
+    end_time="End time in 24-hour format (e.g., 17:00) - only if open",
+    reason="Reason for closing - only if closed"
+)
+@app_commands.choices(status=[
+    app_commands.Choice(name="Open", value="open"),
+    app_commands.Choice(name="Closed", value="closed")
+])
+async def edit_today_command(interaction: discord.Interaction, status: str, start_time: str = "", end_time: str = "", reason: str = "Closed"):
+    """Edit today's hours.
+    
+    This slash command allows administrators to edit today's office hours
+    with specific times or close today with a custom reason. It creates
+    a date-specific override for today's date.
+    
+    Args:
+        interaction: Discord interaction object containing command context
+        status: Whether the office is "open" or "closed" today
+        start_time: Start time in 24-hour format (required if status is "open")
+        end_time: End time in 24-hour format (required if status is "open")
+        reason: Reason for closing (used if status is "closed")
+        
+    Side Effects:
+        - Updates the schedule model with today's date override
+        - Saves changes to schedule.json file
+        - Sends confirmation or error message to Discord
+        - Pushes changes to git
+        
+    Example:
+        /edit_today status:Open start_time:14:00 end_time:17:00
+        -> Sets today to 2:00 PM - 5:00 PM
+        
+        /edit_today status:Closed reason:Holiday
+        -> Closes today with reason "Holiday"
+    """
+    # Check admin permissions
+    if not is_admin(interaction):
+        await interaction.response.send_message("❌ This command requires administrator permissions.", ephemeral=True)
+        return
+    
+    try:
+        # Get today's date in MM/DD format
+        today = date.today()
+        today_str = today.strftime("%m/%d")
+        
+        if status == "open":
+            if not start_time or not end_time:
+                await interaction.response.send_message("❌ Please provide both start_time and end_time when status is open", ephemeral=True)
+                return
+            temp_change(today_str, start_time, end_time)
+            status_text = f"{start_time}-{end_time}"
+        else:  # closed
+            from app import _model, save_schedule_model
+            _d = today_str
+            _model["overrides"][_d] = f"CLOSED ({reason})"
+            save_schedule_model(_model)
+            status_text = f"CLOSED ({reason})"
+        
+        await interaction.response.send_message(f"✅ Edited today ({today_str}): {status_text}")
+        
+        # Push changes to git
+        await push_to_git()
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
 @bot.tree.command(name="close_day", description="Close a specific day with a reason")
 @app_commands.describe(
@@ -471,6 +437,11 @@ async def close_day_command(interaction: discord.Interaction, date_mmdd: str, re
         /close_day date_mmdd:09/16 reason:Maintenance
         -> Closes September 16th with reason "Maintenance"
     """
+    # Check admin permissions
+    if not is_admin(interaction):
+        await interaction.response.send_message("❌ This command requires administrator permissions.", ephemeral=True)
+        return
+    
     try:
         temp_change(date_mmdd, "", "")  # This sets it to CLOSED
         # Update the override to include the reason
@@ -521,6 +492,11 @@ async def close_weekday_command(interaction: discord.Interaction, day: str, reas
         /close_weekday day:Friday reason:Maintenance
         -> Closes Friday by default with reason "Maintenance"
     """
+    # Check admin permissions
+    if not is_admin(interaction):
+        await interaction.response.send_message("❌ This command requires administrator permissions.", ephemeral=True)
+        return
+    
     try:
         set_default_time(day, "", "")  # This sets it to CLOSED
         # Update the default to include the reason
@@ -552,6 +528,11 @@ async def sync_commands(interaction: discord.Interaction):
     Example:
         /sync -> "✅ Synced 8 command(s)" or error message if failed
     """
+    # Check admin permissions
+    if not is_admin(interaction):
+        await interaction.response.send_message("❌ This command requires administrator permissions.", ephemeral=True)
+        return
+    
     try:
         synced = await bot.tree.sync()
         await interaction.response.send_message(f"✅ Synced {len(synced)} command(s)")
