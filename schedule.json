@@ -6,7 +6,7 @@
     "Thursday": "CLOSED",
     "Friday": "CLOSED"
   },
-  "overrides": {}
+  "overrides": {
+    "09/24": "CLOSED (Test)"
+  }
 }
-
-
