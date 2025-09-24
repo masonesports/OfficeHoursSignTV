@@ -2,7 +2,7 @@
 # This file is ignored by git and contains sensitive information
 
 # Discord Bot Token
-DISCORD_TOKEN = "MTQxNzYyNjk0MjkzNjcxMTE4OQ.GeSrb-.Ixg8QCFPhmkCrHbd75tqZzo_OY9AY5ptrWOlKo"
+DISCORD_TOKEN = "MTQxNzYyNjk0MjkzNjcxMTE4OQ.GZU-xN.mUsHzFB1nBRQRq_12ddCB3a-qkAVYgQIHZct24"
 
 # Flask Settings
 FLASK_HOST = "0.0.0.0"

@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 """
-Simple script to run the Discord bot with token input
+Simple script to run the Discord bot with token from secrets.py
 """
 import os
 import sys
 from discord_bot import bot
+from secrets import DISCORD_TOKEN
 
 def main():
     print("🤖 GMU Esports Schedule Discord Bot")
     print("=" * 40)
     
-    # Get token from user input
-    token = input("Enter your Discord bot token: ").strip()
+    # Get token from secrets.py
+    token = DISCORD_TOKEN
     
     if not token:
-        print("❌ No token provided. Exiting.")
+        print("❌ No token found in secrets.py. Exiting.")
         sys.exit(1)
     
     # Set the token as environment variable
@@ -29,6 +30,6 @@ def main():
         print("\n👋 Bot stopped.")
     except Exception as e:
         print(f"❌ Error: {e}")
-# MTQxNzYyNjk0MjkzNjcxMTE4OQ.GeSrb-.Ixg8QCFPhmkCrHbd75tqZzo_OY9AY5ptrWOlKo
+
 if __name__ == "__main__":
     main()
