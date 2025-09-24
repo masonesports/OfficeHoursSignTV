@@ -1,10 +1,10 @@
 {
   "default": {
-    "Monday": "12PM - 5PM",
-    "Tuesday": "12PM - 5PM",
-    "Wednesday": "12PM - 5PM",
-    "Thursday": "CLOSED",
-    "Friday": "CLOSED (Idk blame Tyler)"
+    "Monday": "11AM - 5PM",
+    "Tuesday": "11AM - 5PM",
+    "Wednesday": "11AM - 5PM",
+    "Thursday": "11AM - 5PM",
+    "Friday": "CLOSED"
   },
   "overrides": {
     "09/25": "CLOSED (GameMason recovery)"
