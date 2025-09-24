@@ -39,25 +39,14 @@ def format_schedule_for_discord(rows):
     return "\n".join(lines)
 
 # Slash Commands with autocomplete
-@bot.tree.command(name="hours", description="Show the office hours schedule")
-@app_commands.describe(week="Show current week or next week")
-@app_commands.choices(week=[
-    app_commands.Choice(name="Current Week", value="current"),
-    app_commands.Choice(name="Next Week", value="next")
-])
-async def show_schedule(interaction: discord.Interaction, week: str = "current"):
-    """Show the current week's schedule. Use 'next' for next week."""
+@bot.tree.command(name="hours", description="Show the current week's office hours schedule")
+async def show_schedule(interaction: discord.Interaction):
+    """Show the current week's schedule."""
     try:
-        if week == "next":
-            # Show next week
-            week_monday = start_of_week_monday(date.today()) + timedelta(days=7)
-            rows = effective_week_schedule(week_monday)
-            title = "**Next Week's Schedule**"
-        else:
-            # Show current week
-            week_monday = start_of_week_monday(date.today())
-            rows = effective_week_schedule(week_monday)
-            title = "**Current Week's Schedule**"
+        # Show current week
+        week_monday = start_of_week_monday(date.today())
+        rows = effective_week_schedule(week_monday)
+        title = "**Current Week's Schedule**"
         
         schedule_text = format_schedule_for_discord(rows)
         await interaction.response.send_message(f"{title}\n{schedule_text}")
