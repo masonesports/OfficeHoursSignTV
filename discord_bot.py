@@ -527,16 +527,16 @@ async def set_role_command(interaction: discord.Interaction, role: discord.Role)
 
 
 if __name__ == "__main__":
-    # Try to get token from bot_config file first, then environment
+    # Try to get token from secrets.py first, then environment
     token = None
     try:
-        from bot_config import DISCORD_TOKEN
+        from secrets import DISCORD_TOKEN
         token = DISCORD_TOKEN
     except ImportError:
         token = os.getenv('DISCORD_TOKEN')
     
     if not token:
-        print("❌ Please set DISCORD_TOKEN in secrets.py, config.py, or environment variable")
+        print("❌ Please set DISCORD_TOKEN in secrets.py or environment variable")
         print("Create secrets.py with: DISCORD_TOKEN = 'your_token_here'")
         exit(1)
     
