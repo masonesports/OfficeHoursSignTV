@@ -95,20 +95,69 @@ def set_default_bulk(new_times: Dict[str, str]) -> Dict[str, Dict[str, str]]:
 	return _model
 
 
-def _format_time_range(start_time: str, end_time: str) -> str:
-	"""Convert 24-hour times to readable format.
+def _parse_flexible_time(time_str: str) -> tuple[int, int]:
+	"""Parse time string in various formats and return (hour, minute) in 24-hour format.
 	
-	start_time: 'XX:XX' in 24-hour format (e.g., '14:00')
-	end_time: 'XX:XX' in 24-hour format (e.g., '17:00')
+	Supports formats:
+	- 24-hour: "14:00", "09:30", "21:45"
+	- 12-hour: "2:00PM", "9:30AM", "9:00PM", "12:00AM", "12:00PM"
+	- 12-hour without colon: "2PM", "9AM", "9PM"
+	"""
+	time_str = time_str.strip().upper()
+	
+	# Handle 12-hour format with AM/PM
+	if 'AM' in time_str or 'PM' in time_str:
+		is_pm = 'PM' in time_str
+		time_clean = time_str.replace('AM', '').replace('PM', '').strip()
+		
+		# Handle format like "9:00PM" or "9PM"
+		if ':' in time_clean:
+			hour_str, min_str = time_clean.split(':')
+			hour = int(hour_str)
+			minute = int(min_str)
+		else:
+			hour = int(time_clean)
+			minute = 0
+		
+		# Convert to 24-hour format
+		if is_pm and hour != 12:
+			hour += 12
+		elif not is_pm and hour == 12:
+			hour = 0
+		
+		return hour, minute
+	
+	# Handle 24-hour format
+	else:
+		if ':' in time_str:
+			hour_str, min_str = time_str.split(':')
+			hour = int(hour_str)
+			minute = int(min_str)
+		else:
+			# Handle format like "1400" -> "14:00"
+			if len(time_str) == 4 and time_str.isdigit():
+				hour = int(time_str[:2])
+				minute = int(time_str[2:])
+			else:
+				raise ValueError(f"Invalid time format: {time_str}")
+		
+		return hour, minute
+
+
+def _format_time_range(start_time: str, end_time: str) -> str:
+	"""Convert flexible time formats to readable format.
+	
+	start_time: Time in various formats (e.g., '14:00', '2:00PM', '9:00PM')
+	end_time: Time in various formats (e.g., '17:00', '5:00PM', '9:00PM')
 	Returns: '2:00 PM - 5:00 PM' or 'CLOSED' if both are empty
 	"""
 	if not start_time or not end_time or start_time.strip() == "" or end_time.strip() == "":
 		return "CLOSED"
 	
 	try:
-		# Parse 24-hour format
-		start_hour, start_min = map(int, start_time.split(':'))
-		end_hour, end_min = map(int, end_time.split(':'))
+		# Parse flexible time formats
+		start_hour, start_min = _parse_flexible_time(start_time)
+		end_hour, end_min = _parse_flexible_time(end_time)
 		
 		# Convert to 12-hour format
 		def to_12hour(hour, minute):
@@ -125,7 +174,7 @@ def _format_time_range(start_time: str, end_time: str) -> str:
 		end_12 = to_12hour(end_hour, end_min)
 		
 		return f"{start_12} - {end_12}"
-	except (ValueError, IndexError):
+	except (ValueError, IndexError) as e:
 		return "CLOSED"
 
 
