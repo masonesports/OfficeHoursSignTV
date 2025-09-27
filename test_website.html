@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Website</title>
+</head>
+<body>
+    <h1>GMU Esports Office Hours</h1>
+    <div id="status">Loading...</div>
+    <div id="schedule"></div>
+
+    <script>
+        const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+        
+        function startOfWeekMonday(d) {
+            const c = new Date(d);
+            const day = c.getDay();
+            const diff = (day + 6) % 7;
+            c.setDate(c.getDate() - diff);
+            c.setHours(0, 0, 0, 0);
+            return c;
+        }
+        
+        function fmtMMDD(d) {
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${m}/${day}`;
+        }
+        
+        function renderEffective(model) {
+            const defaults = (model && model.default) || Object.fromEntries(WEEKDAYS.map(d => [d, ""]));
+            const overrides = (model && model.overrides) || {};
+            const container = document.getElementById("schedule");
+            container.innerHTML = "";
+            
+            const monday = startOfWeekMonday(new Date());
+            WEEKDAYS.forEach((dayName, i) => {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                const dstr = fmtMMDD(d);
+                const overridden = overrides[dstr];
+                const effective = (overridden !== undefined && overridden !== "") ? overridden : (defaults[dayName] || "");
+                const isClosed = !effective || effective.toLowerCase().includes("closed");
+                
+                const row = document.createElement("div");
+                row.className = `row ${isClosed ? "closed" : ""}`;
+                const dayEl = document.createElement("div");
+                dayEl.className = `day ${isClosed ? "closed" : ""}`;
+                dayEl.textContent = `${dayName} (${dstr})`;
+                const timeEl = document.createElement("div");
+                timeEl.className = `time ${isClosed ? "closed" : ""}`;
+                timeEl.textContent = effective || "—";
+                row.appendChild(dayEl);
+                row.appendChild(timeEl);
+                container.appendChild(row);
+            });
+        }
+        
+        async function loadSchedule() {
+            try {
+                const res = await fetch("http://localhost:5000/api/schedule", { cache: "no-store" });
+                if (!res.ok) throw new Error("Failed to load schedule");
+                const data = await res.json();
+                console.log("API data:", data);
+                renderEffective(data || {});
+            } catch (err) {
+                console.error("Error:", err);
+                renderEffective({});
+            }
+        }
+        
+        loadSchedule();
+    </script>
+</body>
+</html>
