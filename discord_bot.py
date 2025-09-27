@@ -1,11 +1,13 @@
 import asyncio
 import json
 import os
-from datetime import date, timedelta
+import threading
+import time
+from datetime import date, timedelta, datetime, time as dt_time
 from typing import Optional
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord import app_commands
 
 from app import (
@@ -63,6 +65,40 @@ bot.update_message = config["update_message"]
 bot.update_channel_id = config["update_channel_id"]
 bot.update_role_id = config["update_role_id"]
 
+# Track if we've already updated for this week
+bot.week_updated = False
+bot.last_update_week = None
+
+# Background task to check for Friday 8PM and update website
+@tasks.loop(minutes=5)  # Check every 5 minutes
+async def check_week_update():
+    """Check if it's past Friday 8PM and update website to new week."""
+    try:
+        now = datetime.now()
+        current_week = start_of_week_monday(now.date())
+        
+        # Check if it's Friday 8PM or later
+        is_friday_after_8pm = now.weekday() == 4 and now.time() >= dt_time(20, 0)  # Friday = 4, 8PM = 20:00
+        
+        # Only update once per week
+        if is_friday_after_8pm and (not bot.week_updated or bot.last_update_week != current_week):
+            print(f"🔄 Friday 8PM detected - updating website to new week")
+            
+            # Update the website by triggering a refresh
+            # The website will automatically show next week's schedule due to our Friday 5PM logic
+            await update_website_to_new_week()
+            
+            # Mark as updated for this week
+            bot.week_updated = True
+            # Use next week for tracking to ensure we update to the correct week
+            next_week = start_of_week_monday(now.date()) + timedelta(days=7)
+            bot.last_update_week = next_week
+            
+            print(f"✅ Website updated to new week for week of {next_week}")
+            
+    except Exception as e:
+        print(f"Error in week update check: {e}")
+
 # Sync commands tree
 @bot.event
 async def on_ready():
@@ -72,6 +108,11 @@ async def on_ready():
         print(f'Synced {len(synced)} command(s)')
     except Exception as e:
         print(f'Failed to sync commands: {e}')
+    
+    # Start the background task
+    if not check_week_update.is_running():
+        check_week_update.start()
+        print("🔄 Started background week update checker")
 
 # Helper function to format schedule for Discord
 def format_schedule_for_discord(rows):
@@ -126,6 +167,27 @@ async def send_update_notification(user: str, action: str, details: str):
         await channel.send(full_message)
     except Exception as e:
         print(f"Error sending update notification: {e}")
+
+# Helper function to update website to new week
+async def update_website_to_new_week():
+    """Update the website to show next week's schedule."""
+    try:
+        # The website already has the logic to show next week's schedule when it's Friday 5PM+
+        # Since we're calling this at Friday 8PM, the website should already be showing next week
+        # We just need to ensure the website is refreshed/updated
+        
+        # Force reload the schedule model to ensure it's up to date
+        from app import load_schedule_model
+        load_schedule_model()
+        
+        print("🔄 Website schedule model reloaded for new week")
+        print("ℹ️  Website automatically shows next week's schedule due to Friday 5PM logic")
+        
+        # The website will automatically show next week's schedule due to the Friday 5PM logic
+        # No additional action needed - the website handles this automatically
+        
+    except Exception as e:
+        print(f"Error updating website to new week: {e}")
 
 # Slash Commands with autocomplete
 @bot.tree.command(name="hours", description="Show the current week's office hours schedule")
@@ -304,6 +366,48 @@ async def test_command(interaction: discord.Interaction):
         return
     
     await interaction.response.send_message("🤖 Bot is working! Use `/hours` to see the current schedule.")
+
+@bot.tree.command(name="week_status", description="Check the current week update status")
+async def week_status_command(interaction: discord.Interaction):
+    """Check the current week update status."""
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("❌ You need administrator permissions to use this command.", ephemeral=True)
+        return
+    
+    try:
+        now = datetime.now()
+        current_week = start_of_week_monday(now.date())
+        is_friday_after_8pm = now.weekday() == 4 and now.time() >= dt_time(20, 0)
+        
+        status_message = f"""**Week Update Status**
+        
+**Current Time:** {now.strftime('%A, %Y-%m-%d %H:%M')}
+**Current Week:** {current_week}
+**Is Friday 8PM+:** {'Yes' if is_friday_after_8pm else 'No'}
+**Week Updated:** {'Yes' if bot.week_updated else 'No'}
+**Last Update Week:** {bot.last_update_week if bot.last_update_week else 'Never'}
+**Background Task:** {'Running' if check_week_update.is_running() else 'Stopped'}
+
+**Next Check:** Every 5 minutes
+**Update Time:** Friday 8:00 PM"""
+        
+        await interaction.response.send_message(status_message, ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
+
+@bot.tree.command(name="reset_week", description="Reset the week update flag (admin only)")
+async def reset_week_command(interaction: discord.Interaction):
+    """Reset the week update flag."""
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("❌ You need administrator permissions to use this command.", ephemeral=True)
+        return
+    
+    try:
+        bot.week_updated = False
+        bot.last_update_week = None
+        await interaction.response.send_message("✅ Week update flag reset. The bot will check for Friday 8PM again.", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
 @bot.tree.command(name="close_day", description="Close a weekday with a reason")
 @app_commands.describe(

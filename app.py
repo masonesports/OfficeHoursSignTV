@@ -271,7 +271,28 @@ def next_week():
 
 @app.get("/api/schedule")
 def api_get_schedule():
-	return jsonify(_model)
+	# Apply the same Friday 5PM logic as the main route
+	now = datetime.now()
+	week_monday = start_of_week_monday(date.today())
+	is_friday_after_5pm = now.weekday() == 4 and now.time().hour >= 17
+	
+	if is_friday_after_5pm:
+		week_monday = start_of_week_monday(date.today()) + timedelta(days=7)
+	
+	# Get the effective schedule for the appropriate week
+	rows = effective_week_schedule(week_monday)
+	
+	# Convert rows back to the format expected by the JavaScript
+	processed_model = {
+		"default": _model["default"],
+		"overrides": {}
+	}
+	
+	# Add the processed week data as overrides
+	for day_name, date_str, hours in rows:
+		processed_model["overrides"][date_str] = hours
+	
+	return jsonify(processed_model)
 
 
 @app.post("/api/schedule/default")

@@ -224,7 +224,21 @@
 			const overrides = (model && model.overrides) || {};
 			const container = document.getElementById("schedule");
 			container.innerHTML = "";
-			const monday = startOfWeekMonday(new Date());
+			
+			// The API already applies Friday 5PM logic, so just use the overrides directly
+			// Find the first date in overrides to determine which week to show
+			const overrideDates = Object.keys(overrides).sort();
+			let monday;
+			
+			if (overrideDates.length > 0) {
+				// Use the first override date to determine the week
+				const firstDate = new Date(overrideDates[0]);
+				monday = startOfWeekMonday(firstDate);
+			} else {
+				// Fallback to current week
+				monday = startOfWeekMonday(new Date());
+			}
+			
 			WEEKDAYS.forEach((dayName,i)=>{
 				const d = new Date(monday); d.setDate(monday.getDate()+i);
 				const dstr = fmtMMDD(d);
