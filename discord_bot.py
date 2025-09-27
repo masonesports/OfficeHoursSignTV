@@ -39,7 +39,6 @@ def load_bot_config():
                 "update_role_id": None
             }
     except Exception as e:
-        print(f"Error loading bot config: {e}")
         return {
             "update_message": "📢 **Office Hours Updated**\n{user} {action} office hours: {details}",
             "update_channel_id": None,
@@ -57,7 +56,7 @@ def save_bot_config():
         with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=2, ensure_ascii=False)
     except Exception as e:
-        print(f"Error saving bot config: {e}")
+        pass  # Silently fail on config save errors
 
 # Load configuration on startup
 config = load_bot_config()
@@ -82,8 +81,6 @@ async def check_week_update():
         
         # Only update once per week
         if is_monday and (not bot.week_updated or bot.last_update_week != current_week):
-            print(f"🔄 Monday detected - updating website to new week")
-            
             # Update the website by triggering a refresh
             await update_website_to_new_week()
             
@@ -91,10 +88,8 @@ async def check_week_update():
             bot.week_updated = True
             bot.last_update_week = current_week
             
-            print(f"✅ Website updated to new week for week of {current_week}")
-            
     except Exception as e:
-        print(f"Error in week update check: {e}")
+        pass  # Silently handle week update errors
 
 # Sync commands tree
 @bot.event
@@ -109,7 +104,6 @@ async def on_ready():
     # Start the background task
     if not check_week_update.is_running():
         check_week_update.start()
-        print("🔄 Started background week update checker")
 
 # Helper function to format schedule for Discord
 def format_schedule_for_discord(rows):
@@ -130,7 +124,6 @@ async def send_update_notification(user: str, action: str, details: str):
     try:
         channel = bot.get_channel(bot.update_channel_id)
         if not channel:
-            print(f"Warning: Could not find channel with ID {bot.update_channel_id}")
             return
         
         # Format the simple change message
@@ -163,7 +156,7 @@ async def send_update_notification(user: str, action: str, details: str):
         
         await channel.send(full_message)
     except Exception as e:
-        print(f"Error sending update notification: {e}")
+        pass  # Silently handle notification errors
 
 # Helper function to update website to new week
 async def update_website_to_new_week():
@@ -173,11 +166,8 @@ async def update_website_to_new_week():
         from app import load_schedule_model
         load_schedule_model()
         
-        print("🔄 Website schedule model reloaded for new week")
-        print("ℹ️  Website will show current week's schedule")
-        
     except Exception as e:
-        print(f"Error updating website to new week: {e}")
+        pass  # Silently handle website update errors
 
 # Slash Commands with autocomplete
 @bot.tree.command(name="hours", description="Show the current week's office hours schedule")
@@ -542,16 +532,12 @@ if __name__ == "__main__":
     try:
         from bot_config import DISCORD_TOKEN
         token = DISCORD_TOKEN
-        print("✅ Token loaded from bot_config.py")
     except ImportError:
         token = os.getenv('DISCORD_TOKEN')
-        if token:
-            print("✅ Token loaded from environment variable")
     
     if not token:
         print("❌ Please set DISCORD_TOKEN in secrets.py, config.py, or environment variable")
         print("Create secrets.py with: DISCORD_TOKEN = 'your_token_here'")
         exit(1)
     
-    print("🤖 Starting Discord bot...")
     bot.run(token)

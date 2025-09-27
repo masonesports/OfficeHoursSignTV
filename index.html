@@ -211,37 +211,28 @@
 		
 		async function loadSchedule(){
 			try{
-				console.log("Loading schedule...");
 				// Try API first (for local development), then fallback to JSON file (for GitHub Pages)
 				let res = await fetch("/api/schedule?t=" + Date.now(), { cache: "no-store" });
 				if(!res.ok) {
-					console.log("API not available, loading from schedule.json...");
 					res = await fetch("schedule.json?t=" + Date.now(), { cache: "no-store" });
 				}
 				if(!res.ok) throw new Error("Failed to load schedule");
 				const data = await res.json();
-				console.log("Schedule data:", data);
 				updateStatus(data);
 				renderEffective(data||{});
 			}catch(err){ 
-				console.error("Error loading schedule:", err); 
 				updateStatus({}); 
 				renderEffective({}); 
 			}
 		}
 		
 		function renderEffective(model){
-			console.log("Rendering schedule with model:", model);
 			const defaults = (model && model.default) || Object.fromEntries(WEEKDAYS.map(d=>[d,""]));
 			const overrides = (model && model.overrides) || {};
 			const container = document.getElementById("schedule");
 			container.innerHTML = "";
 			
-			console.log("Defaults:", defaults);
-			console.log("Overrides:", overrides);
-			
 			const monday = startOfWeekMonday(new Date());
-			console.log("Monday of week:", monday);
 			
 			WEEKDAYS.forEach((dayName,i)=>{
 				const d = new Date(monday); d.setDate(monday.getDate()+i);
@@ -249,8 +240,6 @@
 				const overridden = overrides[dstr];
 				const effective = (overridden!==undefined && overridden!=="") ? overridden : (defaults[dayName]||"");
 				const isClosed = !effective || effective.toLowerCase().includes("closed");
-				
-				console.log(`${dayName} (${dstr}): ${effective} [${isClosed ? 'closed' : 'open'}]`);
 				
 				const row = document.createElement("div"); 
 				row.className = `row ${isClosed ? "closed" : ""}`;

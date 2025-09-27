@@ -310,14 +310,5 @@ def api_set_override_week():
 
 
 if __name__ == "__main__":
-	# Test the temp_change function for today (09/16) with 24-hour format
-	temp_change("09/16", "14:00", "17:00")  # 2:00 PM - 5:00 PM
-	print("Test: Set 09/16 to 14:00-17:00 (2:00 PM - 5:00 PM)")
-	
-	# Set override for next week (09/23 - Monday next week)
-	temp_change("09/23", "10:00", "12:00")  # 10:00 AM - 12:00 PM
-	print("Test: Set 09/23 (next Monday) to 10:00-12:00 (10:00 AM - 12:00 PM)")
-	
-	# Run development server
 	app.run(host="0.0.0.0", port=5000, debug=True)
 	
