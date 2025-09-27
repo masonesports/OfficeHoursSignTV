@@ -242,7 +242,9 @@
 				timeEl.className = `time ${isClosed ? "closed" : ""}`; 
 				timeEl.textContent = effective || "—";
 				row.appendChild(dayEl); row.appendChild(timeEl); container.appendChild(row);
-			});		
+			});
+		}
+		
 		loadSchedule();
 		// Update status every minute
 		setInterval(() => {
