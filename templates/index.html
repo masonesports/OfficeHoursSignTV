@@ -212,7 +212,12 @@
 		async function loadSchedule(){
 			try{
 				console.log("Loading schedule...");
-				const res = await fetch("/api/schedule?t=" + Date.now(), { cache: "no-store" });
+				// Try API first (for local development), then fallback to JSON file (for GitHub Pages)
+				let res = await fetch("/api/schedule?t=" + Date.now(), { cache: "no-store" });
+				if(!res.ok) {
+					console.log("API not available, loading from schedule.json...");
+					res = await fetch("schedule.json?t=" + Date.now(), { cache: "no-store" });
+				}
 				if(!res.ok) throw new Error("Failed to load schedule");
 				const data = await res.json();
 				console.log("Schedule data:", data);
@@ -263,6 +268,10 @@
 		// Update status every minute
 		setInterval(() => {
 			fetch("/api/schedule", { cache: "no-store" })
+				.then(res => {
+					if(!res.ok) return fetch("schedule.json?t=" + Date.now(), { cache: "no-store" });
+					return res;
+				})
 				.then(res => res.json())
 				.then(data => updateStatus(data))
 				.catch(err => console.error(err));
