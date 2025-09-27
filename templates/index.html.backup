@@ -225,24 +225,47 @@
 			const container = document.getElementById("schedule");
 			container.innerHTML = "";
 			
-			const monday = startOfWeekMonday(new Date());
+			// The API already applies Friday 5PM logic, so just use the overrides directly
+			// Find the first date in overrides to determine which week to show
+			const overrideDates = Object.keys(overrides).sort();
+			let monday;
+			
+			if (overrideDates.length > 0) {
+				// Use the first override date to determine the week
+				const firstDate = new Date(overrideDates[0]);
+				monday = startOfWeekMonday(firstDate);
+			} else {
+				// Fallback to current week
+				monday = startOfWeekMonday(new Date());
+			}
+			
 			WEEKDAYS.forEach((dayName,i)=>{
 				const d = new Date(monday); d.setDate(monday.getDate()+i);
 				const dstr = fmtMMDD(d);
 				const overridden = overrides[dstr];
-				const effective = (overridden!==undefined && overridden!=="") ? overridden : (defaults[dayName]||"");
-				const isClosed = !effective || effective.toLowerCase().includes("closed");
+				
+				// Use override if available, otherwise use default for that day
+				let effective;
+				if (overridden !== undefined && overridden !== "") {
+					effective = overridden;
+				} else {
+					effective = defaults[dayName] || "";
+				}
+				
+				const isClosed = !effective || effective.toLowerCase().includes('closed');
 				
 				const row = document.createElement("div"); 
-				row.className = `row ${isClosed ? "closed" : ""}`;
+				row.className = `row ${isClosed ? 'closed' : ''}`;
 				const dayEl = document.createElement("div"); 
-				dayEl.className = `day ${isClosed ? "closed" : ""}`; 
+				dayEl.className = `day ${isClosed ? 'closed' : ''}`; 
 				dayEl.textContent = `${dayName} (${dstr})`;
 				const timeEl = document.createElement("div"); 
-				timeEl.className = `time ${isClosed ? "closed" : ""}`; 
+				timeEl.className = `time ${isClosed ? 'closed' : ''}`; 
 				timeEl.textContent = effective || "—";
 				row.appendChild(dayEl); row.appendChild(timeEl); container.appendChild(row);
-			});		
+			});
+		}
+		
 		loadSchedule();
 		// Update status every minute
 		setInterval(() => {

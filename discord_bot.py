@@ -69,32 +69,29 @@ bot.update_role_id = config["update_role_id"]
 bot.week_updated = False
 bot.last_update_week = None
 
-# Background task to check for Friday 8PM and update website
+# Background task to check for Monday and update website
 @tasks.loop(minutes=5)  # Check every 5 minutes
 async def check_week_update():
-    """Check if it's past Friday 8PM and update website to new week."""
+    """Check if it's Monday and update website to new week."""
     try:
         now = datetime.now()
         current_week = start_of_week_monday(now.date())
         
-        # Check if it's Friday 8PM or later
-        is_friday_after_8pm = now.weekday() == 4 and now.time() >= dt_time(20, 0)  # Friday = 4, 8PM = 20:00
+        # Check if it's Monday
+        is_monday = now.weekday() == 0  # Monday = 0
         
         # Only update once per week
-        if is_friday_after_8pm and (not bot.week_updated or bot.last_update_week != current_week):
-            print(f"🔄 Friday 8PM detected - updating website to new week")
+        if is_monday and (not bot.week_updated or bot.last_update_week != current_week):
+            print(f"🔄 Monday detected - updating website to new week")
             
             # Update the website by triggering a refresh
-            # The website will automatically show next week's schedule due to our Friday 5PM logic
             await update_website_to_new_week()
             
             # Mark as updated for this week
             bot.week_updated = True
-            # Use next week for tracking to ensure we update to the correct week
-            next_week = start_of_week_monday(now.date()) + timedelta(days=7)
-            bot.last_update_week = next_week
+            bot.last_update_week = current_week
             
-            print(f"✅ Website updated to new week for week of {next_week}")
+            print(f"✅ Website updated to new week for week of {current_week}")
             
     except Exception as e:
         print(f"Error in week update check: {e}")
@@ -170,21 +167,14 @@ async def send_update_notification(user: str, action: str, details: str):
 
 # Helper function to update website to new week
 async def update_website_to_new_week():
-    """Update the website to show next week's schedule."""
+    """Update the website to show new week's schedule."""
     try:
-        # The website already has the logic to show next week's schedule when it's Friday 5PM+
-        # Since we're calling this at Friday 8PM, the website should already be showing next week
-        # We just need to ensure the website is refreshed/updated
-        
         # Force reload the schedule model to ensure it's up to date
         from app import load_schedule_model
         load_schedule_model()
         
         print("🔄 Website schedule model reloaded for new week")
-        print("ℹ️  Website automatically shows next week's schedule due to Friday 5PM logic")
-        
-        # The website will automatically show next week's schedule due to the Friday 5PM logic
-        # No additional action needed - the website handles this automatically
+        print("ℹ️  Website will show current week's schedule")
         
     except Exception as e:
         print(f"Error updating website to new week: {e}")
