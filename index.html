@@ -23,6 +23,14 @@
 			justify-content: center;
 		}
 
+		.logo {
+			width: 15vh;
+			height: 15vh;
+			margin-bottom: 2vh;
+			border-radius: 50%;
+			box-shadow: 0 0.5vh 1.5vh rgba(0, 0, 0, 0.2);
+		}
+
 		.container {
 			background-color: white;
 			padding: 4vh 3vw;
@@ -63,6 +71,12 @@
 			background: linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%);
 			color: #B71C1C;
 			border: 0.3vh solid #F44336;
+		}
+
+		.status.closing-soon {
+			background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+			color: #E65100;
+			border: 0.3vh solid #FF9800;
 		}
 
 		.schedule {
@@ -152,6 +166,7 @@
 	</style>
 </head>
 <body>
+	<img src="GMU-Esports-Main-Logo-768x768-1.webp" alt="GMU Esports Logo" class="logo">
 	<div class="container">
 		<h1>George Mason Esports Office Hours</h1>
 		<div id="status" class="status">Loading...</div>
@@ -178,13 +193,13 @@
 			
 			// If closed or no schedule, office is closed
 			if (!schedule || schedule.toLowerCase().includes('closed')) {
-				return false;
+				return { isOpen: false, isClosingSoon: false };
 			}
 			
 			// Parse time range (e.g., "12PM - 5PM", "2:00 PM - 5:00 PM")
 			const timeMatch = schedule.match(/(\d{1,2}):?(\d{2})?\s*(AM|PM)\s*-\s*(\d{1,2}):?(\d{2})?\s*(AM|PM)/i);
 			if (!timeMatch) {
-				return false; // Can't parse time, assume closed
+				return { isOpen: false, isClosingSoon: false }; // Can't parse time, assume closed
 			}
 			
 			const [, startHour, startMin, startPeriod, endHour, endMin, endPeriod] = timeMatch;
@@ -202,14 +217,26 @@
 			const endMinutes = to24Hour(endHour, endMin, endPeriod);
 			const currentMinutes = now.getHours() * 60 + now.getMinutes();
 			
-			return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+			const isOpen = currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+			const isClosingSoon = isOpen && (endMinutes - currentMinutes) <= 60; // Within 1 hour of closing
+			
+			return { isOpen, isClosingSoon };
 		}
 		
 		function updateStatus(model) {
 			const statusEl = document.getElementById("status");
-			const isOpen = isOfficeOpenNow(model);
-			statusEl.textContent = isOpen ? 'OPEN' : 'CLOSED';
-			statusEl.className = `status ${isOpen ? 'open' : 'closed'}`;
+			const status = isOfficeOpenNow(model);
+			
+			if (status.isClosingSoon) {
+				statusEl.textContent = 'CLOSING SOON';
+				statusEl.className = 'status closing-soon';
+			} else if (status.isOpen) {
+				statusEl.textContent = 'OPEN';
+				statusEl.className = 'status open';
+			} else {
+				statusEl.textContent = 'CLOSED';
+				statusEl.className = 'status closed';
+			}
 		}
 		
 		async function loadSchedule(){
