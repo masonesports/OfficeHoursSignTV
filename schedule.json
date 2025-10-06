@@ -4,7 +4,9 @@
     "Tuesday": "11:00 AM - 5:00 PM",
     "Wednesday": "11:00 AM - 5:00 PM",
     "Thursday": "11:00 AM - 5:00 PM",
-    "Friday": "CLOSED"
+    "Friday": "CLOSED (Closed)"
   },
-  "overrides": {}
+  "overrides": {
+    "10/06": "CLOSED (Closed)"
+  }
 }

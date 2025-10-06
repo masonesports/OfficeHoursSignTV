@@ -34,10 +34,14 @@ def _coerce_to_model(data: object) -> Dict[str, Dict[str, str]]:
 			for day, val in data["default"].items():
 				if day in model["default"] and isinstance(val, str):
 					model["default"][day] = val
-			for dstr, mapping in data["overrides"].items():
-				if isinstance(mapping, dict):
+			for dstr, override_val in data["overrides"].items():
+				if isinstance(override_val, str):
+					# Direct string override (new format)
+					model["overrides"][dstr] = override_val
+				elif isinstance(override_val, dict):
+					# Nested dict override (old format)
 					model["overrides"][dstr] = {}
-					for day, val in mapping.items():
+					for day, val in override_val.items():
 						if day in model["default"] and isinstance(val, str):
 							model["overrides"][dstr][day] = val
 			return model
@@ -240,12 +244,22 @@ def start_of_week_monday(any_date: date) -> date:
 
 def effective_week_schedule(week_monday: date) -> List[Tuple[str, str, str]]:
 	"""Return list of tuples: (weekday_name, MM/DD, effective_time)."""
+	# Always load the latest model to ensure we have current data
+	current_model = load_schedule_model()
 	result: List[Tuple[str, str, str]] = []
 	for i, day_name in enumerate(WEEKDAYS):
 		d = week_monday + timedelta(days=i)
 		dstr = d.strftime("%m/%d")
-		override = _model["overrides"].get(dstr)
-		effective = override if (override is not None and override != "") else _model["default"].get(day_name, "")
+		override = current_model["overrides"].get(dstr)
+		
+		# Handle both string overrides (new format) and dict overrides (old format)
+		if isinstance(override, str):
+			effective = override if override else current_model["default"].get(day_name, "")
+		elif isinstance(override, dict):
+			effective = override.get(day_name, current_model["default"].get(day_name, ""))
+		else:
+			effective = current_model["default"].get(day_name, "")
+		
 		result.append((day_name, dstr, effective or ""))
 	return result
 

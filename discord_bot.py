@@ -133,12 +133,19 @@ async def send_update_notification(user: str, action: str, details: str):
             details=details
         )
         
-        # Get current week's schedule (or next week if Friday after 5PM)
+        # Get current week's schedule (or next week if past Friday)
         from datetime import date, datetime, time, timedelta
         now = datetime.now()
-        is_friday_after_5pm = now.weekday() == 4 and now.time() >= time(17, 0)  # Friday = 4, 5PM = 17:00
+        current_weekday = now.weekday()
+        current_time = now.time()
         
-        if is_friday_after_5pm:
+        # Show next week's schedule if it's Saturday/Sunday or Friday after 5PM
+        show_next_week = (
+            current_weekday >= 5 or  # Saturday or Sunday
+            (current_weekday == 4 and current_time >= time(17, 0))  # Friday after 5PM
+        )
+        
+        if show_next_week:
             week_monday = start_of_week_monday(date.today()) + timedelta(days=7)
         else:
             week_monday = start_of_week_monday(date.today())
@@ -176,11 +183,20 @@ async def show_schedule(interaction: discord.Interaction):
     try:
         from datetime import datetime, time
         
-        # Check if it's Friday at 5PM or later
         now = datetime.now()
-        is_friday_after_5pm = now.weekday() == 4 and now.time() >= time(17, 0)  # Friday = 4, 5PM = 17:00
+        current_weekday = now.weekday()  # Monday=0, Tuesday=1, ..., Sunday=6
+        current_time = now.time()
         
-        if is_friday_after_5pm:
+        # Smart logic: show next week's schedule if:
+        # - It's Saturday (weekday=5) or Sunday (weekday=6)
+        # - It's Friday after 5PM (weekday=4, time >= 17:00)
+        # - It's past Friday (but this is already covered by Saturday/Sunday)
+        show_next_week = (
+            current_weekday >= 5 or  # Saturday or Sunday
+            (current_weekday == 4 and current_time >= time(17, 0))  # Friday after 5PM
+        )
+        
+        if show_next_week:
             # Show next week's schedule
             week_monday = start_of_week_monday(date.today()) + timedelta(days=7)
             rows = effective_week_schedule(week_monday)
@@ -286,7 +302,7 @@ async def help_command(interaction: discord.Interaction):
 # 🤖 GMU Esports Office Hours Bot - Help
 
 ## 📋 **Viewing Commands**
-- `/hours` - Show the current week's office hours schedule
+- `/hours` - Show office hours schedule (current week Mon-Fri, next week if weekend or Friday after 5PM)
 
 ## ⚙️ **Administrator Commands**
 
@@ -304,15 +320,20 @@ async def help_command(interaction: discord.Interaction):
   - `reason`: Optional reason for the change
 
 ### **Opening Days**
-- `/open_day` - Open a weekday with custom hours
+- `/open_day` - Open the next occurrence of a weekday with custom hours
   - `day`: Monday, Tuesday, Wednesday, Thursday, or Friday
-  - `start_time`: Start time (optional, defaults to 9:00 AM)
+  - `start_time`: Start time (optional, defaults to 11:00 AM)
   - `end_time`: End time (optional, defaults to 5:00 PM)
   - `reason`: Optional reason for opening
+  - *Note: If it's Tuesday and you say "open monday", it will open next Monday*
 
 ### **Closing Days**
-- `/close_day` - Close a weekday with a reason
+- `/close_day` - Close the next occurrence of a weekday with a reason
   - `day`: Monday, Tuesday, Wednesday, Thursday, or Friday
+  - `reason`: Reason for closing
+  - *Note: If it's Tuesday and you say "close monday", it will close next Monday*
+- `/close_date` - Close a specific date with a reason
+  - `date`: Date in MM/DD format (e.g., 12/25)
   - `reason`: Reason for closing
 
 ### **Notification Settings**
@@ -389,6 +410,32 @@ async def reset_week_command(interaction: discord.Interaction):
     except Exception as e:
         await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
+def get_next_occurrence_of_day(target_day: str) -> str:
+    """Get the next occurrence of a weekday as MM/DD format.
+    
+    If today is the target day, returns today's date.
+    If today is past the target day this week, returns next week's occurrence.
+    """
+    from datetime import date, timedelta
+    
+    # Map day names to weekday numbers (Monday = 0, Sunday = 6)
+    day_map = {
+        "Monday": 0, "Tuesday": 1, "Wednesday": 2, 
+        "Thursday": 3, "Friday": 4, "Saturday": 5, "Sunday": 6
+    }
+    
+    target_weekday = day_map[target_day]
+    today = date.today()
+    today_weekday = today.weekday()
+    
+    # Calculate days until next occurrence
+    days_ahead = target_weekday - today_weekday
+    if days_ahead < 0:  # Target day already passed this week
+        days_ahead += 7  # Move to next week
+    
+    next_occurrence = today + timedelta(days=days_ahead)
+    return next_occurrence.strftime("%m/%d")
+
 @bot.tree.command(name="close_day", description="Close a weekday with a reason")
 @app_commands.describe(
     day="Day of the week",
@@ -408,20 +455,23 @@ async def close_day_command(interaction: discord.Interaction, day: str, reason: 
         return
     
     try:
-        from app import _model, save_schedule_model, set_default_time
+        from app import _model, save_schedule_model, temp_change
         
-        # Close default schedule for the weekday
-        set_default_time(day, "", "")  # This sets it to CLOSED
-        _model["default"][day] = f"CLOSED ({reason})"
+        # Get the next occurrence of this day
+        target_date = get_next_occurrence_of_day(day)
+        
+        # Close that specific date
+        temp_change(target_date, "", "")  # This sets it to CLOSED
+        _model["overrides"][target_date] = f"CLOSED ({reason})"
         save_schedule_model(_model)
         
-        await interaction.response.send_message(f"✅ Closed {day}: {reason}")
+        await interaction.response.send_message(f"✅ Closed {day} ({target_date}): {reason}")
         
         # Send notification
         await send_update_notification(
             user=interaction.user.display_name,
             action="closed",
-            details=f"{day}: {reason}"
+            details=f"{day} ({target_date}): {reason}"
         )
     except Exception as e:
         await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
@@ -429,7 +479,7 @@ async def close_day_command(interaction: discord.Interaction, day: str, reason: 
 @bot.tree.command(name="open_day", description="Open a weekday with custom hours")
 @app_commands.describe(
     day="Day of the week",
-    start_time="Start time in 24-hour format (e.g., 14:00) - optional, defaults to 9:00 AM",
+    start_time="Start time in 24-hour format (e.g., 14:00) - optional, defaults to 11:00 AM",
     end_time="End time in 24-hour format (e.g., 17:00) - optional, defaults to 5:00 PM",
     reason="Optional reason for opening (e.g., Special Event, Extended Hours, etc.)"
 )
@@ -440,36 +490,71 @@ async def close_day_command(interaction: discord.Interaction, day: str, reason: 
     app_commands.Choice(name="Thursday", value="Thursday"),
     app_commands.Choice(name="Friday", value="Friday")
 ])
-async def open_day_command(interaction: discord.Interaction, day: str, start_time: str = "9:00AM", end_time: str = "5:00PM", reason: str = ""):
+async def open_day_command(interaction: discord.Interaction, day: str, start_time: str = "11:00AM", end_time: str = "5:00PM", reason: str = ""):
     """Open a weekday with custom hours."""
     if not interaction.user.guild_permissions.administrator:
         await interaction.response.send_message("❌ You need administrator permissions to use this command.", ephemeral=True)
         return
     
     try:
-        from app import _format_time_range, _model, save_schedule_model, set_default_time
+        from app import _format_time_range, _model, save_schedule_model, temp_change
         
-        # Update default schedule for the weekday
+        # Get the next occurrence of this day
+        target_date = get_next_occurrence_of_day(day)
+        
+        # Format the time
         formatted_time = _format_time_range(start_time, end_time)
         status_text = formatted_time
         
         if reason:
             status_text = f"{formatted_time} ({reason})"
-            _model["default"][day] = status_text
-        else:
-            set_default_time(day, start_time, end_time)
         
-        await interaction.response.send_message(f"✅ Opened {day}: {status_text}")
+        # Update that specific date
+        temp_change(target_date, start_time, end_time)
+        _model["overrides"][target_date] = status_text
+        save_schedule_model(_model)
+        
+        await interaction.response.send_message(f"✅ Opened {day} ({target_date}): {status_text}")
         
         # Send notification
         await send_update_notification(
             user=interaction.user.display_name,
             action="opened",
-            details=f"{day}: {status_text}"
+            details=f"{day} ({target_date}): {status_text}"
         )
     except Exception as e:
         await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
+
+@bot.tree.command(name="close_date", description="Close a specific date (MM/DD format)")
+@app_commands.describe(
+    date="Date to close in MM/DD format (e.g., 12/25)",
+    reason="Reason for closing (e.g., Holiday, Maintenance, etc.)"
+)
+async def close_date_command(interaction: discord.Interaction, date: str, reason: str = "Closed"):
+    """Close a specific date with a reason."""
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("❌ You need administrator permissions to use this command.", ephemeral=True)
+        return
+    
+    try:
+        from app import _model, save_schedule_model, temp_change
+        
+        # Close that specific date
+        temp_change(date, "", "")  # This sets it to CLOSED
+        _model["overrides"][date] = f"CLOSED ({reason})"
+        save_schedule_model(_model)
+        
+        await interaction.response.send_message(f"✅ Closed {date}: {reason}")
+        
+        # Send notification
+        await send_update_notification(
+            user=interaction.user.display_name,
+            action="closed",
+            details=f"{date}: {reason}"
+        )
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
 @bot.tree.command(name="change_message", description="Set the message template for office hours updates")
 @app_commands.describe(

@@ -262,7 +262,28 @@
 			const container = document.getElementById("schedule");
 			container.innerHTML = "";
 			
-			const monday = startOfWeekMonday(new Date());
+			// Smart logic: show next week's schedule if it's past Friday
+			const now = new Date();
+			const currentWeekday = now.getDay(); // Sunday=0, Monday=1, ..., Saturday=6
+			const currentTime = now.getHours() * 60 + now.getMinutes(); // Minutes since midnight
+			
+			// Show next week's schedule if:
+			// - It's Saturday (weekday=6) or Sunday (weekday=0)
+			// - It's Friday after 5PM (weekday=5, time >= 17:00)
+			const showNextWeek = (
+				currentWeekday === 0 || currentWeekday === 6 ||  // Sunday or Saturday
+				(currentWeekday === 5 && currentTime >= 17 * 60)  // Friday after 5PM
+			);
+			
+			let monday;
+			if (showNextWeek) {
+				// Show next week's schedule
+				monday = startOfWeekMonday(new Date());
+				monday.setDate(monday.getDate() + 7); // Add 7 days to get next week's Monday
+			} else {
+				// Show current week's schedule
+				monday = startOfWeekMonday(new Date());
+			}
 			
 			WEEKDAYS.forEach((dayName,i)=>{
 				const d = new Date(monday); d.setDate(monday.getDate()+i);
