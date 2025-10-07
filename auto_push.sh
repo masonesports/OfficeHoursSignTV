@@ -26,11 +26,21 @@ fi
 if git push; then
     echo "✅ Code pushed successfully!"
 else
-    echo "❌ Push failed. This might be due to:"
-    echo "   - Missing GitHub credentials"
-    echo "   - Network connectivity issues"
-    echo "   - Repository permissions"
-    echo ""
-    echo "💡 Run ./setup_credentials.sh for credential setup instructions"
-    exit 1
+    echo "⚠️ Push failed, trying to resolve conflicts..."
+    # Try to pull and merge first
+    if git pull --no-edit; then
+        echo "✅ Pull successful, retrying push..."
+        if git push; then
+            echo "✅ Code pushed successfully after merge!"
+        else
+            echo "❌ Push failed after merge. This might be due to:"
+            echo "   - Missing GitHub credentials"
+            echo "   - Network connectivity issues"
+            echo "   - Repository permissions"
+            exit 1
+        fi
+    else
+        echo "❌ Pull failed. Manual intervention required."
+        exit 1
+    fi
 fi
