@@ -3,17 +3,13 @@
 
 echo "🔄 Auto-pushing code changes..."
 
-# Check if we have changes to commit
-if git diff --quiet && git diff --cached --quiet; then
-    echo "ℹ️ No changes to commit"
-    exit 0
-fi
-
-# Add all changes
+# Add all changes first
 git add .
 
-# Commit with timestamp
-git commit -m "Auto-commit: $(date '+%Y-%m-%d %H:%M:%S') - Schedule update"
+# Check if we have changes to commit
+if ! git diff --cached --quiet; then
+    git commit -m "Auto-commit: "
+fi
 
 # Configure git credentials if environment variables are set
 if [ ! -z "$GITHUB_USERNAME" ] && [ ! -z "$GITHUB_TOKEN" ]; then
@@ -24,7 +20,6 @@ fi
 
 # Configure git to handle merges automatically
 git config pull.rebase false
-
 # Push to remote with error handling
 if git push; then
     echo "✅ Code pushed successfully!"
