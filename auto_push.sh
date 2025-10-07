@@ -7,13 +7,9 @@ echo "🔄 Auto-pushing code changes..."
 git add .
 
 # Check if we have changes to commit
-if git diff --cached --quiet; then
-    echo "ℹ️ No changes to commit"
-    exit 0
+if ! git diff --cached --quiet; then
+    git commit -m "Auto-commit: "
 fi
-
-# Commit with timestamp
-git commit -m "Auto-commit: $(date '+%Y-%m-%d %H:%M:%S') - Schedule update"
 
 # Push to remote with error handling
 if git push; then
