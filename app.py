@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 from datetime import date, datetime, timedelta
 from typing import Dict, List, Tuple
 
@@ -67,6 +68,30 @@ def load_schedule_model() -> Dict[str, Dict[str, str]]:
 def save_schedule_model(model: Dict[str, Dict[str, str]]) -> None:
 	with open(SCHEDULE_FILE, "w", encoding="utf-8") as f:
 		json.dump(model, f, indent=2, ensure_ascii=False)
+	
+	# Auto-push changes to git
+	try:
+		# Get the path to auto_push.sh script
+		auto_push_script = os.path.join(APP_ROOT, "auto_push.sh")
+		if os.path.exists(auto_push_script):
+			# Make sure the script is executable
+			os.chmod(auto_push_script, 0o755)
+			# Run the auto-push script
+			result = subprocess.run([auto_push_script], 
+									cwd=APP_ROOT, 
+									capture_output=True, 
+									text=True, 
+									timeout=30)
+			if result.returncode == 0:
+				print("✅ Schedule changes pushed to git successfully")
+			else:
+				print(f"⚠️ Auto-push failed: {result.stderr}")
+		else:
+			print("⚠️ auto_push.sh script not found, skipping auto-push")
+	except subprocess.TimeoutExpired:
+		print("⚠️ Auto-push timed out, changes saved but not pushed")
+	except Exception as e:
+		print(f"⚠️ Auto-push failed: {e}, changes saved but not pushed")
 
 
 # In-memory cache; load on startup
