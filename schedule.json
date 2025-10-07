@@ -1,12 +1,14 @@
 {
   "default": {
-    "Monday": "10:00 AM - 4:00 PM",
+    "Monday": "11:00 AM - 5:00 PM",
     "Tuesday": "11:00 AM - 5:00 PM",
     "Wednesday": "11:00 AM - 5:00 PM",
     "Thursday": "11:00 AM - 5:00 PM",
     "Friday": "CLOSED (Closed)"
   },
   "overrides": {
-    "10/06": "CLOSED (Closed)"
+    "10/06": "CLOSED (Closed)",
+    "10/08": "11:00 AM - 3:00 PM (Esports Class)",
+    "10/10": "11:00 AM - 5:00 PM"
   }
 }
