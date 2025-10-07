@@ -3,14 +3,14 @@
 
 echo "🔄 Auto-pushing code changes..."
 
+# Add all changes first
+git add .
+
 # Check if we have changes to commit
-if git diff --quiet && git diff --cached --quiet; then
+if git diff --cached --quiet; then
     echo "ℹ️ No changes to commit"
     exit 0
 fi
-
-# Add all changes
-git add .
 
 # Commit with timestamp
 git commit -m "Auto-commit: $(date '+%Y-%m-%d %H:%M:%S') - Schedule update"
