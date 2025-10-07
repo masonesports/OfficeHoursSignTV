@@ -22,6 +22,9 @@ if [ ! -z "$GITHUB_USERNAME" ] && [ ! -z "$GITHUB_TOKEN" ]; then
     echo "https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com" > ~/.git-credentials
 fi
 
+# Configure git to handle merges automatically
+git config pull.rebase false
+
 # Push to remote with error handling
 if git push; then
     echo "✅ Code pushed successfully!"
