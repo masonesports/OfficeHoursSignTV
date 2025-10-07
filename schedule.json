@@ -1,7 +1,7 @@
 {
   "default": {
-    "Monday": "9:00 AM - 5:00 PM",
-    "Tuesday": "10:00 AM - 4:00 PM",
+    "Monday": "11:00 AM - 5:00 PM",
+    "Tuesday": "11:00 AM - 5:00 PM",
     "Wednesday": "11:00 AM - 5:00 PM",
     "Thursday": "11:00 AM - 5:00 PM",
     "Friday": "CLOSED (Closed)"
@@ -10,6 +10,6 @@
     "10/06": "CLOSED (Closed)",
     "10/08": "CLOSED (Closed)",
     "10/10": "11:00 AM - 5:00 PM",
-    "10/09": "CLOSED (Closed)"
+    "10/09": "11:00 AM - 5:00 PM"
   }
 }
