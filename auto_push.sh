@@ -11,6 +11,7 @@ if ! git diff --cached --quiet; then
     git commit -m "Auto-commit: "
 fi
 
+echo 'echo "DEBUG:Auto-Push called"'
 # Push to remote with error handling
 if git push; then
     echo "✅ Code pushed successfully!"
