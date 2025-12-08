@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Office Hours - Closed for Winter Break</title>
+	<link rel="stylesheet" href="static/style.css">
+	<style>
+		* {
+			box-sizing: border-box;
+		}
+
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+			background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+			margin: 0;
+			padding: 2vh;
+			min-height: 100vh;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.logo {
+			width: 15vh;
+			height: 15vh;
+			margin-bottom: 2vh;
+			border-radius: 50%;
+			box-shadow: 0 0.5vh 1.5vh rgba(0, 0, 0, 0.2);
+		}
+
+		.container {
+			background-color: white;
+			padding: 4vh 3vw;
+			border-radius: 2vh;
+			box-shadow: 0 1vh 3vh rgba(0, 0, 0, 0.2);
+			width: 90vw;
+			max-width: 50vh;
+			text-align: center;
+		}
+
+		h1 {
+			font-size: 4vh;
+			font-weight: 700;
+			margin: 0 0 3vh 0;
+			color: #2E7D32;
+			text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+		}
+
+		.status {
+			font-size: 3.5vh;
+			font-weight: 800;
+			text-align: center;
+			margin-bottom: 4vh;
+			padding: 2vh 3vw;
+			border-radius: 1.5vh;
+			text-transform: uppercase;
+			letter-spacing: 0.1em;
+			box-shadow: 0 0.5vh 1vh rgba(0, 0, 0, 0.1);
+		}
+
+		.status.closed {
+			background: linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%);
+			color: #B71C1C;
+			border: 0.3vh solid #F44336;
+		}
+
+		.message {
+			font-size: 3.5vh;
+			font-weight: 600;
+			color: #495057;
+			line-height: 1.6;
+			margin-top: 2vh;
+		}
+
+		/* Responsive adjustments for very tall screens */
+		@media (min-height: 120vh) {
+			.container {
+				padding: 3vh 2vw;
+			}
+			
+			h1 {
+				font-size: 3.5vh;
+				margin-bottom: 2vh;
+			}
+			
+			.status {
+				font-size: 3vh;
+				margin-bottom: 3vh;
+				padding: 1.5vh 2vw;
+			}
+
+			.message {
+				font-size: 3vh;
+			}
+		}
+	</style>
+</head>
+<body>
+	<img src="GMU-Esports-Main-Logo-768x768-1.webp" alt="GMU Esports Logo" class="logo">
+	<div class="container">
+		<h1>George Mason Esports Office Hours</h1>
+		<div class="status closed">CLOSED</div>
+		<div class="message">CLOSED for Winter Break!<br>Good luck on finals!</div>
+	</div>
+</body>
+</html>
+
